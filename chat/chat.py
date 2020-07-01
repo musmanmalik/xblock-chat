@@ -18,10 +18,11 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.http import Http404
+from django import utils
 
 from xblock.core import XBlock
 from xblock.fields import List, Scope, String, Boolean
-from xblock.fragment import Fragment
+from web_fragments.fragment import Fragment
 from xblock.validation import ValidationMessage
 from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
@@ -29,7 +30,7 @@ from xblockutils.studio_editable import StudioEditableXBlockMixin
 from .default_data import DEFAULT_BOT_ID, BOT_MESSAGE_ANIMATION_DELAY, DEFAULT_DATA, USER_ID, MAX_USER_RESPONSES
 from .default_data import BUTTONS_ENTERING_TRANSITION_DURATION, BUTTONS_LEAVING_TRANSITION_DURATION, SCROLL_DELAY
 from .default_data import NAME_PLACEHOLDER, TYPING_DELAY_PER_CHARACTER, USER_MESSAGE_ANIMATION_DELAY
-from .utils import _
+from .utils import _, I18NService
 
 try:
     from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
@@ -42,8 +43,9 @@ except ImportError:
 loader = ResourceLoader(__name__)
 
 
+@XBlock.needs("i18n")
 @XBlock.wants("user")
-class ChatXBlock(StudioEditableXBlockMixin, XBlock):
+class ChatXBlock(StudioEditableXBlockMixin, XBlock, I18NService):
     """
     An XBlock that allows learners to chat with a bot, where the bot
     follows a script and the learner can choose among possible
@@ -134,6 +136,25 @@ class ChatXBlock(StudioEditableXBlockMixin, XBlock):
         "enable_restart_button",
     )
 
+    @staticmethod
+    def resource_string(path):
+        """Handy helper for getting resources from our kit."""
+        data = pkg_resources.resource_string(__name__, path)
+        return data.decode("utf8")
+
+    def get_translation_content(self):
+        try:
+            language = utils.translation.get_language().split('-')
+            if len(language) == 2:
+                new_lang = language[0] + "_" + language[1]
+            else:
+                new_lang = utils.translation.get_language()
+            return self.resource_string('public/js/translations/{lang}/textjs.js'.format(
+                lang=new_lang,
+            ))
+        except IOError:
+            return self.resource_string('public/js/translations/en/textjs.js')
+
     @XBlock.supports("multi_device")  # Mark as mobile-friendly
     def student_view(self, context=None):
         """View shown to students"""
@@ -141,8 +162,12 @@ class ChatXBlock(StudioEditableXBlockMixin, XBlock):
         context["steps"] = self.steps
         fragment = Fragment()
         fragment.add_content(
-            loader.render_template("templates/chat.html", context)
-        )
+            loader.render_django_template(
+                "templates/chat.html",
+                context=context,
+                i18n_service=self.i18n_service,
+            ))
+
         fragment.add_css_url(
             self.runtime.local_resource_url(self, "public/css/chat.css")
         )
@@ -150,6 +175,7 @@ class ChatXBlock(StudioEditableXBlockMixin, XBlock):
             self.runtime.local_resource_url(
                 self, "public/js/vendor/virtual-dom-1.3.0.min.js")
         )
+        fragment.add_javascript(self.get_translation_content())
         fragment.add_javascript_url(
             self.runtime.local_resource_url(self, "public/js/src/chat.js")
         )

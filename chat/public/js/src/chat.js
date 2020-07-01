@@ -256,7 +256,7 @@ function ChatTemplates(init_data) {
     var actionsTemplate = function(ctx) {
         var children = [];
         if (init_data['enable_restart_button'] && ctx.show_buttons_entering) {
-            children.push(h('button.restart-button', 'Restart'));
+            children.push(h('button.restart-button', gettext('Restart')));
         }
         return h('div.actions', children);
     };
