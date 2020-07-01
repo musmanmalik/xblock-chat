@@ -2,6 +2,22 @@
 
 function ChatTemplates(init_data) {
     "use strict";
+    var gettext;
+    var ngettext;
+    if ('ChatXBlockI18N' in window) {
+        // Use Chat's local translations
+        gettext = window.ChatXBlockI18N.gettext;
+        ngettext = window.ChatXBlockI18N.ngettext;
+    } else if ('gettext' in window) {
+        // Use edxapp's global translations
+        gettext = window.gettext;
+        ngettext = window.ngettext;
+    }
+    if (typeof gettext == "undefined") {
+        // No translations -- used by test environment
+        gettext = function(string) { return string; };
+        ngettext = function(strA, strB, n) { return n == 1 ? strA : strB; };
+    }
 
     var h = virtualDom.h;
 
