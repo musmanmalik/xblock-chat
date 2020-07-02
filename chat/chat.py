@@ -30,7 +30,7 @@ from xblockutils.studio_editable import StudioEditableXBlockMixin
 from .default_data import DEFAULT_BOT_ID, BOT_MESSAGE_ANIMATION_DELAY, DEFAULT_DATA, USER_ID, MAX_USER_RESPONSES
 from .default_data import BUTTONS_ENTERING_TRANSITION_DURATION, BUTTONS_LEAVING_TRANSITION_DURATION, SCROLL_DELAY
 from .default_data import NAME_PLACEHOLDER, TYPING_DELAY_PER_CHARACTER, USER_MESSAGE_ANIMATION_DELAY
-from .utils import _, I18NService
+from .utils import _
 
 try:
     from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
@@ -45,7 +45,7 @@ loader = ResourceLoader(__name__)
 
 @XBlock.needs("i18n")
 @XBlock.wants("user")
-class ChatXBlock(StudioEditableXBlockMixin, XBlock, I18NService):
+class ChatXBlock(StudioEditableXBlockMixin, XBlock):
     """
     An XBlock that allows learners to chat with a bot, where the bot
     follows a script and the learner can choose among possible
@@ -162,11 +162,8 @@ class ChatXBlock(StudioEditableXBlockMixin, XBlock, I18NService):
         context["steps"] = self.steps
         fragment = Fragment()
         fragment.add_content(
-            loader.render_django_template(
-                "templates/chat.html",
-                context=context,
-                i18n_service=self.i18n_service,
-            ))
+            loader.render_template("templates/chat.html", context)
+        )
 
         fragment.add_css_url(
             self.runtime.local_resource_url(self, "public/css/chat.css")
